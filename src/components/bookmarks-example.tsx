@@ -2,7 +2,7 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
 export default function BookmarksList() {
-  const bookmarks = useQuery(api.bookmarks.list);
+  const bookmarks = useQuery(api.bookmarks.list, {});
 
   return (
     <div>

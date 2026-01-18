@@ -1,12 +1,13 @@
 "use client"
 
-import { Settings, Moon, Sun, Monitor, Download, Trash2, Upload, Loader2 } from 'lucide-react'
+import { Moon, Sun, Monitor, Download, Trash2, Upload, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useTheme } from '@/components/theme-provider'
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { useRef, useState } from 'react'
+import { Id } from 'convex/values'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -120,14 +121,14 @@ export default function SettingsPage() {
               parent = parent.parentElement
             }
 
-            let folderId: any = undefined
+            let folderId: Id<"folders"> | undefined = undefined
             const systemFolders = ['Bookmarks bar', 'Other bookmarks', 'Mobile bookmarks', 'Bookmarks']
             if (folderName && !systemFolders.includes(folderName)) {
               if (folderCache[folderName]) {
-                folderId = folderCache[folderName]
+                folderId = folderCache[folderName] as Id<"folders">
               } else {
                 folderId = await createFolder({ name: folderName, color: folderColor })
-                folderCache[folderName] = folderId as string
+                folderCache[folderName] = folderId
               }
             }
 
