@@ -7,7 +7,7 @@ import { useTheme } from '@/components/theme-provider'
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { useRef, useState } from 'react'
-import { Id } from 'convex/values'
+import { Id } from '@/convex/_generated/dataModel'
 import {
   AlertDialog,
   AlertDialogAction,
