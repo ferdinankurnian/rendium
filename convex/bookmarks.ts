@@ -2,14 +2,24 @@ import { v } from "convex/values";
 import { mutation, query, action } from "./_generated/server";
 import { api } from "./_generated/api";
 import * as cheerio from 'cheerio';
+import { getAuthUserId } from "@convex-dev/auth/server";
 
 export const list = query({
   args: { folderId: v.optional(v.id("folders")) },
   handler: async (ctx, args) => {
-    const q = ctx.db.query("bookmarks").withIndex("by_status", (q) => q.eq("isDeleted", false));
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return [];
+    }
+
+    const q = ctx.db
+      .query("bookmarks")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("isDeleted"), false));
+
     if (args.folderId) {
       const bookmarks = await q.collect();
-      return bookmarks.filter(b => b.folderId === args.folderId);
+      return bookmarks.filter((b) => b.folderId === args.folderId);
     }
     return await q.order("desc").collect();
   },
@@ -18,9 +28,15 @@ export const list = query({
 export const listTrash = query({
   args: {},
   handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return [];
+    }
+
     return await ctx.db
       .query("bookmarks")
-      .withIndex("by_status", (q) => q.eq("isDeleted", true))
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("isDeleted"), true))
       .order("desc")
       .collect();
   },
@@ -36,8 +52,14 @@ export const create = mutation({
     pinned: v.boolean(),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Unauthorized");
+    }
+
     const bookmarkId = await ctx.db.insert("bookmarks", {
       ...args,
+      userId,
       title: args.title || new URL(args.url).hostname,
       isDeleted: false,
       createdAt: Date.now(),
@@ -62,6 +84,12 @@ export const updateMetadata = mutation({
     ogImage: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const bookmark = await ctx.db.get(args.id);
+    if (!bookmark || bookmark.userId !== userId) {
+      throw new Error("Unauthorized");
+    }
+
     const { id, ...updates } = args;
     await ctx.db.patch(id, {
       ...updates,
@@ -101,7 +129,7 @@ export const scrapeMetadataAction = action({
         ogImage = `${urlObj.protocol}//${urlObj.host}${ogImage.startsWith('/') ? '' : '/'}${ogImage}`;
       }
 
-      await ctx.runMutation(api.bookmarks.updateMetadata, {
+      await ctx.runMutation(api.bookmarks.updateMetadataInternal, {
         id: args.id,
         title,
         description,
@@ -113,9 +141,31 @@ export const scrapeMetadataAction = action({
   },
 });
 
+// internal mutation buat background task, biar gak kena check userId (karena action gak ada context user)
+export const updateMetadataInternal = mutation({
+  args: {
+    id: v.id("bookmarks"),
+    title: v.optional(v.string()),
+    description: v.optional(v.string()),
+    ogImage: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { id, ...updates } = args;
+    await ctx.db.patch(id, {
+      ...updates,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
 export const moveToTrash = mutation({
   args: { id: v.id("bookmarks") },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const bookmark = await ctx.db.get(args.id);
+    if (!bookmark || bookmark.userId !== userId) {
+      throw new Error("Unauthorized");
+    }
     await ctx.db.patch(args.id, { isDeleted: true, deletedAt: Date.now(), updatedAt: Date.now() });
   },
 });
@@ -123,6 +173,11 @@ export const moveToTrash = mutation({
 export const restoreFromTrash = mutation({
   args: { id: v.id("bookmarks") },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const bookmark = await ctx.db.get(args.id);
+    if (!bookmark || bookmark.userId !== userId) {
+      throw new Error("Unauthorized");
+    }
     await ctx.db.patch(args.id, { isDeleted: false, deletedAt: undefined, updatedAt: Date.now() });
   },
 });
@@ -130,6 +185,11 @@ export const restoreFromTrash = mutation({
 export const remove = mutation({
   args: { id: v.id("bookmarks") },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const bookmark = await ctx.db.get(args.id);
+    if (!bookmark || bookmark.userId !== userId) {
+      throw new Error("Unauthorized");
+    }
     await ctx.db.delete(args.id);
   },
 });
@@ -137,6 +197,11 @@ export const remove = mutation({
 export const togglePin = mutation({
   args: { id: v.id("bookmarks"), pinned: v.boolean() },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const bookmark = await ctx.db.get(args.id);
+    if (!bookmark || bookmark.userId !== userId) {
+      throw new Error("Unauthorized");
+    }
     await ctx.db.patch(args.id, { pinned: args.pinned, updatedAt: Date.now() });
   },
 });
@@ -144,6 +209,11 @@ export const togglePin = mutation({
 export const moveToFolder = mutation({
   args: { id: v.id("bookmarks"), folderId: v.optional(v.id("folders")) },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const bookmark = await ctx.db.get(args.id);
+    if (!bookmark || bookmark.userId !== userId) {
+      throw new Error("Unauthorized");
+    }
     await ctx.db.patch(args.id, { folderId: args.folderId, updatedAt: Date.now() });
   },
 });

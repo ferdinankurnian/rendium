@@ -8,7 +8,7 @@ export default defineSchema({
     title: v.string(),
     url: v.string(),
     description: v.optional(v.string()),
-    ogImage: v.optional(v.string()), // Cuma ini yang kita tambahin ko
+    ogImage: v.optional(v.string()),
     folderId: v.optional(v.id("folders")),
     pinned: v.boolean(),
     isDeleted: v.boolean(),
