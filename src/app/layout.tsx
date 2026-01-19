@@ -16,8 +16,29 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Rendium - Simple Bookmark Manager",
+  title: "Rendium",
   description: "Clean and simple bookmark manager",
+  openGraph: {
+    title: "Rendium",
+    description: "Clean and simple bookmark manager",
+    url: "https://rendium.iydheko.site",
+    siteName: "Rendium",
+    images: [
+      {
+        url: "/og-rendium.png",
+        width: 1200,
+        height: 630,
+        alt: "Rendium Open Graph Image",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Rendium",
+    description: "Clean and simple bookmark manager",
+    images: ["/og-rendium.png"],
+  },
   icons: {
     icon: '/rendium.png',
   },
