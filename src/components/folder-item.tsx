@@ -8,6 +8,7 @@ import { Doc } from '@/convex/_generated/dataModel'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Spinner } from '@/components/ui/spinner'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -33,10 +34,11 @@ import {
 interface FolderItemProps {
   folder: Doc<"folders">
   isActive: boolean
+  isLoading?: boolean
   onClick: () => void
 }
 
-export function FolderItem({ folder, isActive, onClick }: FolderItemProps) {
+export function FolderItem({ folder, isActive, isLoading, onClick }: FolderItemProps) {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false)
   const [newName, setNewName] = useState(folder.name)
   const [selectedColor, setSelectedColor] = useState(folder.color || '')
@@ -95,6 +97,16 @@ export function FolderItem({ folder, isActive, onClick }: FolderItemProps) {
     pink: 'bg-pink-500',
   }
 
+  const textColorMap = {
+    red: 'text-red-500',
+    orange: 'text-orange-500',
+    yellow: 'text-yellow-500',
+    green: 'text-green-500',
+    blue: 'text-blue-500',
+    purple: 'text-purple-500',
+    pink: 'text-pink-500',
+  }
+
   return (
     <>
       <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
@@ -105,13 +117,24 @@ export function FolderItem({ folder, isActive, onClick }: FolderItemProps) {
                 variant={isActive ? 'secondary' : 'ghost'}
                 className="w-full justify-start mb-1 group relative"
                 onClick={onClick}
+                disabled={isLoading}
               >
                 <div className="flex items-center gap-2 mr-2">
-                  <div 
-                    className={`w-3 h-3 rounded-full ${
-                      folder.color && colorMap[folder.color as keyof typeof colorMap] ? colorMap[folder.color as keyof typeof colorMap] : 'bg-gray-400'
-                    }`}
-                  />
+                  {isLoading ? (
+                    <Spinner 
+                      className={`${
+                        folder.color && textColorMap[folder.color as keyof typeof textColorMap] 
+                          ? textColorMap[folder.color as keyof typeof textColorMap] 
+                          : ''
+                      }`} 
+                    />
+                  ) : (
+                    <div 
+                      className={`w-3 h-3 rounded-full ${
+                        folder.color && colorMap[folder.color as keyof typeof colorMap] ? colorMap[folder.color as keyof typeof colorMap] : 'bg-gray-400'
+                      }`}
+                    />
+                  )}
                 </div>
                 <span className="truncate flex-1 text-left">{folder.name}</span>
               </Button>

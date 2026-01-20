@@ -6,6 +6,8 @@ import { AddFolderPopover } from '@/components/add-folder-popover'
 import { FolderItem } from '@/components/folder-item'
 import { Doc } from '@/convex/_generated/dataModel'
 import { useRouter, usePathname } from 'next/navigation'
+import { useState, useTransition } from 'react'
+import { Spinner } from '@/components/ui/spinner'
 
 interface SidebarContentProps {
   activeFolder: string | null
@@ -24,9 +26,26 @@ export function SidebarContent({
 }: SidebarContentProps) {
   const router = useRouter()
   const pathname = usePathname()
+  const [isPending, startTransition] = useTransition()
+  const [pendingPath, setPendingPath] = useState<string | null>(null)
   
   const isAllBookmarksPage = pathname === '/'
   const isTrashPage = pathname === '/trash'
+
+  const handleNavigate = (path: string, folderId: string | null = null) => {
+    setPendingPath(path)
+    startTransition(() => {
+      if (folderId !== undefined) {
+        setActiveFolder(folderId)
+      }
+      if (path === '/trash') {
+        setTrashView(true)
+      } else if (path === '/') {
+        setTrashView(false)
+      }
+      router.push(path)
+    })
+  }
   
   return (
     <div className="flex flex-col h-full">
@@ -34,24 +53,27 @@ export function SidebarContent({
         <Button
           variant={isAllBookmarksPage ? 'secondary' : 'ghost'}
           className="w-full justify-start mb-1"
-          onClick={() => {
-            setActiveFolder(null)
-            router.push('/')
-          }}
+          disabled={isPending}
+          onClick={() => handleNavigate('/')}
         >
-          <BookOpen className="h-4 w-4 mr-2" />
+          {isPending && pendingPath === '/' ? (
+            <Spinner className="mr-2" />
+          ) : (
+            <BookOpen className="h-4 w-4 mr-2" />
+          )}
           All Bookmarks
         </Button>
         <Button
             variant={isTrashPage ? 'secondary' : 'ghost'}
             className={`w-full justify-start ${isTrashPage ? 'text-destructive' : ''}`}
-            onClick={() => {
-              setActiveFolder(null)
-              setTrashView(!isTrashView)
-              router.push('/trash')
-            }}
+            disabled={isPending}
+            onClick={() => handleNavigate('/trash')}
           >
-            <Trash2 className="h-4 w-4 mr-2" />
+            {isPending && pendingPath === '/trash' ? (
+              <Spinner className="mr-2" />
+            ) : (
+              <Trash2 className="h-4 w-4 mr-2" />
+            )}
             Trash
           </Button>
         <div className="mt-4">
@@ -59,17 +81,18 @@ export function SidebarContent({
             <span className="text-sm font-semibold text-muted-foreground">Folders</span>
             <AddFolderPopover />
           </div>
-          {folders.map((folder) => (
-            <FolderItem
-              key={folder._id}
-              folder={folder}
-              isActive={!isTrashView && activeFolder === folder._id}
-              onClick={() => {
-                setActiveFolder(folder._id)
-                router.push(`/folder/${folder._id}?n=${encodeURIComponent(folder.name)}`)
-              }}
-            />
-          ))}
+          {folders.map((folder) => {
+            const folderPath = `/folder/${folder._id}?n=${encodeURIComponent(folder.name)}`
+            return (
+              <FolderItem
+                key={folder._id}
+                folder={folder}
+                isActive={!isTrashView && activeFolder === folder._id}
+                isLoading={isPending && pendingPath === folderPath}
+                onClick={() => handleNavigate(folderPath, folder._id)}
+              />
+            )
+          })}
           {folders.length === 0 && (
             <p className="text-sm text-muted-foreground px-2">No folders yet</p>
           )}

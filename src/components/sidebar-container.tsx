@@ -9,6 +9,8 @@ import { SidebarContent } from './sidebar'
 import { Doc } from '@/convex/_generated/dataModel'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { useRouter, usePathname } from 'next/navigation'
+import { useTransition } from 'react'
+import { Spinner } from '@/components/ui/spinner'
 
 interface SidebarProps {
   activeFolder: string | null
@@ -28,7 +30,15 @@ export function Sidebar({
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
+  const [isPending, startTransition] = useTransition()
+  
   const isSettingsPage = pathname === '/settings'
+
+  const handleSettingsClick = () => {
+    startTransition(() => {
+      router.push('/settings')
+    })
+  }
 
   return (
     <>
@@ -56,9 +66,10 @@ export function Sidebar({
             <Button 
               variant={isSettingsPage ? 'secondary' : 'ghost'} 
               size="icon" 
-              onClick={() => router.push('/settings')}
+              onClick={handleSettingsClick}
+              disabled={isPending}
             >
-              <Settings />
+              {isPending ? <Spinner /> : <Settings />}
             </Button>
           </div>
         </div>
@@ -92,9 +103,10 @@ export function Sidebar({
             <Button 
               variant={isSettingsPage ? 'secondary' : 'ghost'} 
               size="icon" 
-              onClick={() => router.push('/settings')}
+              onClick={handleSettingsClick}
+              disabled={isPending}
             >
-              <Settings />
+              {isPending ? <Spinner /> : <Settings />}
             </Button>
           </div>
         </SheetContent>
