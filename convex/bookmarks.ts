@@ -25,6 +25,24 @@ export const list = query({
   },
 });
 
+export const count = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return 0;
+    }
+
+    const bookmarks = await ctx.db
+      .query("bookmarks")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("isDeleted"), false))
+      .collect();
+
+    return bookmarks.length;
+  },
+});
+
 export const listTrash = query({
   args: {},
   handler: async (ctx) => {

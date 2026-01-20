@@ -7,6 +7,7 @@ import { api } from '@/convex/_generated/api'
 
 export function RightSidebar() {
   const user = useQuery(api.users.viewer)
+  const bookmarkCount = useQuery(api.bookmarks.count)
 
   return (
     <div className="hidden xl:block">
@@ -28,14 +29,26 @@ export function RightSidebar() {
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="font-medium">20 <span className="text-muted-foreground font-normal">/ 100 bookmarks</span></span>
-                <span className="text-muted-foreground">20%</span>
+                <span className="font-medium">{bookmarkCount ?? 0} <span className="text-muted-foreground font-normal">/ ∞ bookmarks</span></span>
+                <span className="text-muted-foreground">100%</span>
               </div>
-              <Progress value={20} className="h-1.5" />
+              <Progress value={100} className="h-1.5" />
             </div>
           </CardContent>
         </Card>
 
+        {/* <Card className="p-0">
+          <CardContent className="p-4 flex flex-col gap-3">
+            <h1 className="font-semibold text-lg leading-none">On this folder</h1>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="font-medium">{bookmarkCount ?? 0} <span className="text-muted-foreground font-normal">/ ∞ bookmarks</span></span>
+                <span className="text-muted-foreground">100%</span>
+              </div>
+              <Progress value={100} className="h-1.5" />
+            </div>
+          </CardContent>
+        </Card> */}
       </div>
     </div>
   )
