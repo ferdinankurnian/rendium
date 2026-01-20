@@ -36,7 +36,7 @@ export function RightSidebar() {
                   )}
                   <span className="text-muted-foreground font-normal">/ ∞ bookmarks</span>
                 </span>
-                <span className="text-muted-foreground">100%</span>
+                <span className="text-muted-foreground">∞ %</span>
               </div>
               <Progress value={100} className="h-1.5" />
             </div>
