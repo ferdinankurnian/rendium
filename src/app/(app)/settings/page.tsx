@@ -114,57 +114,97 @@ export default function SettingsPage() {
       try {
         const parser = new DOMParser()
         const doc = parser.parseFromString(content, "text/html")
-        const dts = Array.from(doc.querySelectorAll('dt')).filter(dt =>
-          dt.querySelector('a') && !dt.querySelector('h3')
-        )
 
         const folderCache: Record<string, string> = {}
         let importCount = 0
+        let currentFolderName = ''
+        let currentFolderColor = ''
 
-        for (const dt of dts) {
-          const a = dt.querySelector('a')
-          if (a) {
-            const url = a.getAttribute('href') || ''
-            const title = a.textContent || ''
+        // Walk through all DL elements recursively
+        const walkDL = (dl: HTMLElement) => {
+          let child = dl.firstElementChild
+          while (child) {
+            if (child.tagName === 'DT') {
+              const h3 = child.querySelector('h3')
+              const a = child.querySelector('a')
+              const nestedDL = child.querySelector('dl')
 
-            // Skip invalid or non-HTTP URLs
-            try {
-              const parsed = new URL(url)
-              if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') continue
-            } catch {
-              continue
-            }
+              if (h3) {
+                // This is a folder header
+                currentFolderName = h3.textContent || ''
+                currentFolderColor = h3.getAttribute('color') || ''
+              }
 
-            let folderName = ''
-            let folderColor = ''
-            let parent = dt.parentElement
-            while (parent && parent.tagName !== 'HTML') {
-              if (parent.tagName === 'DL') {
-                const prev = parent.previousElementSibling
-                const h3 = prev?.querySelector('h3') || (prev?.tagName === 'H3' ? prev : null)
-                if (h3) {
-                  folderName = h3.textContent || ''
-                  folderColor = h3.getAttribute('color') || ''
-                  break
+              if (a) {
+                // This is a bookmark
+                const url = a.getAttribute('href') || ''
+                const title = a.textContent || ''
+
+                // Skip invalid or non-HTTP URLs
+                try {
+                  const parsed = new URL(url)
+                  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return
+                } catch {
+                  return
                 }
-              }
-              parent = parent.parentElement
-            }
 
-            let folderId: Id<"folders"> | undefined = undefined
-            const systemFolders = ['Bookmarks bar', 'Other bookmarks', 'Mobile bookmarks', 'Bookmarks']
-            if (folderName && !systemFolders.includes(folderName)) {
-              if (folderCache[folderName]) {
-                folderId = folderCache[folderName] as Id<"folders">
-              } else {
-                folderId = await createFolder({ name: folderName, color: folderColor })
-                folderCache[folderName] = folderId
+                // Save bookmark with current folder context
+                bookmarksToImport.push({
+                  url,
+                  title,
+                  folderName: currentFolderName,
+                  folderColor: currentFolderColor
+                })
+              }
+
+              if (nestedDL) {
+                // Recurse into nested folder
+                const savedFolder = currentFolderName
+                const savedColor = currentFolderColor
+                walkDL(nestedDL as HTMLElement)
+                // Restore parent folder context after returning from nested
+                currentFolderName = savedFolder
+                currentFolderColor = savedColor
               }
             }
-
-            await createBookmark({ url, title, pinned: false, folderId })
-            importCount++
+            child = child.nextElementSibling
           }
+        }
+
+        const bookmarksToImport: Array<{
+          url: string
+          title: string
+          folderName: string
+          folderColor: string
+        }> = []
+
+        // Start from root DL
+        const rootDL = doc.querySelector('dl')
+        if (rootDL) {
+          walkDL(rootDL as HTMLElement)
+        }
+
+        // Import all bookmarks
+        for (const item of bookmarksToImport) {
+          let folderId: Id<"folders"> | undefined = undefined
+          const systemFolders = ['Bookmarks bar', 'Other bookmarks', 'Mobile bookmarks', 'Bookmarks']
+
+          if (item.folderName && !systemFolders.includes(item.folderName)) {
+            if (folderCache[item.folderName]) {
+              folderId = folderCache[item.folderName] as Id<"folders">
+            } else {
+              folderId = await createFolder({ name: item.folderName, color: item.folderColor })
+              folderCache[item.folderName] = folderId
+            }
+          }
+
+          await createBookmark({
+            url: item.url,
+            title: item.title,
+            pinned: false,
+            folderId
+          })
+          importCount++
         }
         setImportStatus({
           title: "Import Successful",
