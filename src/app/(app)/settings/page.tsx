@@ -2,9 +2,9 @@
 
 import { useRef, useState } from 'react'
 import Image from 'next/image'
-import { Moon, Sun, Monitor, Download, Trash2, Upload, Loader2, LogOut, User, Smartphone, Globe, Laptop } from 'lucide-react'
+import { Moon, Sun, Monitor, Download, Trash2, Upload, Loader2, LogOut, User } from 'lucide-react'
 import { useQuery, useMutation } from 'convex/react'
-import { useUser, useClerk, useSessionList, useSession } from "@clerk/nextjs"
+import { useUser, useClerk } from "@clerk/nextjs"
 
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
@@ -26,7 +26,7 @@ import {
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme()
-  const { signOut } = useClerk()
+  const clerk = useClerk()
   const { user } = useUser()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -36,7 +36,6 @@ export default function SettingsPage() {
     clearAll: false,
     import: false,
     signOut: false,
-    sessions: {} as Record<string, boolean>
   })
   const bookmarks = useQuery(api.bookmarks.list, {}) || []
   const trashBookmarks = useQuery(api.bookmarks.listTrash) || []
@@ -46,9 +45,6 @@ export default function SettingsPage() {
   const createBookmark = useMutation(api.bookmarks.create)
   const removePermanently = useMutation(api.bookmarks.remove)
   const removeFolder = useMutation(api.folders.remove)
-
-  const { sessions, isLoaded: sessionsLoaded } = useSessionList()
-  const { session: currentSession } = useSession()
 
   const maskEmail = (email?: string | null) => {
     if (!email) return ""
@@ -60,52 +56,10 @@ export default function SettingsPage() {
   const handleSignOut = async () => {
     setLoadingStates(prev => ({ ...prev, signOut: true }))
     try {
-      await signOut({ redirectUrl: "/login" })
+      await clerk.signOut({ redirectUrl: "/login" })
     } finally {
       setLoadingStates(prev => ({ ...prev, signOut: false }))
     }
-  }
-
-  const handleRevokeSession = async (sessionId: string) => {
-    setLoadingStates(prev => ({
-      ...prev,
-      sessions: { ...prev.sessions, [sessionId]: true }
-    }))
-    try {
-      const session = sessions?.find(s => s.id === sessionId)
-      if (session) {
-        await session.revoke()
-        // If revoking current session, sign out and redirect
-        if (sessionId === currentSession?.id) {
-          await signOut({ redirectUrl: "/login" })
-        }
-      }
-    } finally {
-      setLoadingStates(prev => ({
-        ...prev,
-        sessions: { ...prev.sessions, [sessionId]: false }
-      }))
-    }
-  }
-
-  const formatLastActive = (date: Date) => {
-    const now = new Date()
-    const diff = now.getTime() - date.getTime()
-    const minutes = Math.floor(diff / 60000)
-    const hours = Math.floor(diff / 3600000)
-    const days = Math.floor(diff / 86400000)
-
-    if (minutes < 1) return 'Just now'
-    if (minutes < 60) return `${minutes}m ago`
-    if (hours < 24) return `${hours}h ago`
-    if (days < 7) return `${days}d ago`
-    return date.toLocaleDateString()
-  }
-
-  const getDeviceIcon = (userAgent?: string) => {
-    if (!userAgent) return Globe
-    if (/mobile|android|iphone/i.test(userAgent)) return Smartphone
-    return Laptop
   }
 
   const handleExport = () => {
@@ -121,18 +75,18 @@ export default function SettingsPage() {
     folders.forEach(folder => {
       html += `    <DT><H3 ADD_DATE="${Math.floor(folder.createdAt / 1000)}" LAST_MODIFIED="0"${folder.color ? ` COLOR="${folder.color}"` : ''}>${folder.name}</H3>\n`
       html += `    <DL><p>\n`
-      
+
       const folderBookmarks = bookmarks.filter(b => b.folderId === folder._id)
       folderBookmarks.forEach(b => {
         html += `        <DT><A HREF="${b.url}" ADD_DATE="${Math.floor(b.createdAt / 1000)}">${b.title}</A>\n`
       })
-      
+
       html += `    </DL><p>\n`
     })
 
     const validFolderIds = folders.map(f => f._id)
     const unassigned = bookmarks.filter(b => !b.folderId || !validFolderIds.includes(b.folderId))
-    
+
     unassigned.forEach(b => {
       html += `    <DT><A HREF="${b.url}" ADD_DATE="${Math.floor(b.createdAt / 1000)}">${b.title}</A>\n`
     })
@@ -154,19 +108,19 @@ export default function SettingsPage() {
 
     setLoadingStates(prev => ({ ...prev, import: true }))
     const reader = new FileReader()
-    
+
     reader.onload = async (event) => {
       const content = event.target?.result as string
       try {
         const parser = new DOMParser()
         const doc = parser.parseFromString(content, "text/html")
-        const dts = Array.from(doc.querySelectorAll('dt')).filter(dt => 
+        const dts = Array.from(doc.querySelectorAll('dt')).filter(dt =>
           dt.querySelector('a') && !dt.querySelector('h3')
         )
-        
+
         const folderCache: Record<string, string> = {}
         let importCount = 0
-        
+
         for (const dt of dts) {
           const a = dt.querySelector('a')
           if (a) {
@@ -180,7 +134,7 @@ export default function SettingsPage() {
             } catch {
               continue
             }
-            
+
             let folderName = ''
             let folderColor = ''
             let parent = dt.parentElement
@@ -313,103 +267,21 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5" /> Active Sessions
-          </CardTitle>
-          <CardDescription>Manage your active sessions across devices</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {!sessionsLoaded ? (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Loading sessions...
-            </div>
-          ) : sessions?.length === 0 ? (
-            <p className="text-muted-foreground">No active sessions found.</p>
-          ) : (
-            sessions?.map((session) => {
-              const DeviceIcon = getDeviceIcon(session.user?.primaryEmailAddress?.emailAddress)
-              const isCurrentSession = session.id === currentSession?.id
-              return (
-                <div key={session.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center">
-                      <DeviceIcon className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">
-                          {session.user?.primaryEmailAddress?.emailAddress?.split('@')[0] || 'Unknown Device'}
-                        </p>
-                        {isCurrentSession && (
-                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                            Current
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Active {formatLastActive(session.lastActiveAt)}
-                      </p>
-                    </div>
-                  </div>
-                  {!isCurrentSession && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          disabled={loadingStates.sessions[session.id]}
-                        >
-                          {loadingStates.sessions[session.id] ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            'Revoke'
-                          )}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Revoke Session?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will sign out this device immediately.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleRevokeSession(session.id)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            Revoke
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-                </div>
-              )
-            })
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
             <Monitor className="h-5 w-5" /> Appearance
           </CardTitle>
           <CardDescription>Customize the look and feel of the app</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex gap-2">
-            {[ 
+            {[
               { name: 'light' as const, icon: Sun, label: 'Light' },
               { name: 'dark' as const, icon: Moon, label: 'Dark' },
               { name: 'system' as const, icon: Monitor, label: 'System' }
             ].map(({ name, icon: Icon, label }) => (
-              <Button 
+              <Button
                 key={name}
                 variant={theme === name ? 'default' : 'outline'}
-                size="sm" 
+                size="sm"
                 onClick={() => setTheme(name)}
               >
                 <Icon className="h-4 w-4 mr-2" /> {label}
@@ -430,9 +302,9 @@ export default function SettingsPage() {
           <Button onClick={handleExport} variant="outline" className="gap-2">
             <Download className="h-4 w-4" /> Export HTML
           </Button>
-          <Button 
-            onClick={() => fileInputRef.current?.click()} 
-            className="gap-2" 
+          <Button
+            onClick={() => fileInputRef.current?.click()}
+            className="gap-2"
             disabled={loadingStates.import}
           >
             {loadingStates.import ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
@@ -471,8 +343,8 @@ export default function SettingsPage() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel disabled={loadingStates.trash}>Cancel</AlertDialogCancel>
-                  <AlertDialogAction 
-                    onClick={handleEmptyTrash} 
+                  <AlertDialogAction
+                    onClick={handleEmptyTrash}
                     disabled={loadingStates.trash}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
@@ -505,8 +377,8 @@ export default function SettingsPage() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel disabled={loadingStates.clearAll}>Cancel</AlertDialogCancel>
-                  <AlertDialogAction 
-                    onClick={handleClearAllData} 
+                  <AlertDialogAction
+                    onClick={handleClearAllData}
                     disabled={loadingStates.clearAll}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
