@@ -10,8 +10,8 @@ export function RightSidebar() {
   const bookmarkCount = useQuery(api.bookmarks.count)
 
   return (
-    <div className="hidden xl:block">
-      <div className="fixed right-4 top-4 bottom-4 w-80 flex flex-col gap-4">
+    <div className="hidden lg:block">
+      <div className="fixed right-4 top-4 bottom-4 w-72 xl:w-80 flex flex-col gap-4">
         {/* User Profile Card */}
         <Card className="p-0">
           <CardContent className="p-4 flex flex-col gap-3">

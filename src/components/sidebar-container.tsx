@@ -1,10 +1,9 @@
 "use client"
 
 import Image from 'next/image'
-import { useState } from 'react'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
-import { FolderOpen, Settings } from 'lucide-react'
+import { Settings } from 'lucide-react'
 import { SidebarContent } from './sidebar'
 import { Doc } from '@/convex/_generated/dataModel'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -18,6 +17,8 @@ interface SidebarProps {
   folders: Doc<"folders">[]
   isTrashView: boolean
   setTrashView: (isTrash: boolean) => void
+  mobileOpen: boolean
+  setMobileOpen: (open: boolean) => void
 }
 
 export function Sidebar({
@@ -26,12 +27,13 @@ export function Sidebar({
   folders,
   isTrashView,
   setTrashView,
+  mobileOpen,
+  setMobileOpen,
 }: SidebarProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
   const [isPending, startTransition] = useTransition()
-  
+
   const isSettingsPage = pathname === '/settings'
 
   const handleSettingsClick = () => {
@@ -46,15 +48,15 @@ export function Sidebar({
       <div className="hidden md:block">
         <div className="flex flex-col fixed left-4 top-4 bottom-4 w-64 border rounded-lg bg-card shadow-lg overflow-hidden">
           <div className="p-4 flex items-center gap-2">
-            <Image 
-              src="/rendium.png" 
-              alt="Rendium" 
+            <Image
+              src="/rendium.png"
+              alt="Rendium"
               width={32}
               height={32}
               priority
             />
           </div>
-          <SidebarContent 
+          <SidebarContent
             activeFolder={activeFolder}
             setActiveFolder={setActiveFolder}
             folders={folders}
@@ -76,22 +78,17 @@ export function Sidebar({
       </div>
 
       {/* Mobile Sidebar */}
-      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="md:hidden">
-            <FolderOpen className="h-5 w-5" />
-          </Button>
-        </SheetTrigger>
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-64 p-0">
           <div className="p-4 flex items-center gap-2">
-            <Image 
-              src="/rendium.png" 
-              alt="Rendium" 
+            <Image
+              src="/rendium.png"
+              alt="Rendium"
               width={32}
               height={32}
             />
           </div>
-          <SidebarContent 
+          <SidebarContent
             activeFolder={activeFolder}
             setActiveFolder={setActiveFolder}
             folders={folders}
