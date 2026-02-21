@@ -1,13 +1,16 @@
+// Users are managed by Clerk, no need for convex users table
+// Clerk provides user data via useUser() hook on the client
+
 import { query } from "./_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
 
 export const viewer = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (userId === null) {
+    const identity = await ctx.auth.getUserIdentity();
+    const userId = identity?.subject;
+    if (!userId) {
       return null;
     }
-    return await ctx.db.get(userId);
+    return { userId };
   },
 });

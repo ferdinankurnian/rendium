@@ -82,7 +82,7 @@ export default function FolderPage() {
               <h2 className="text-lg font-semibold flex items-center gap-2">Pinned</h2>
               <div className={activeViewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" : "space-y-3"}>
                 {pinnedBookmarks.map((b) => (
-                  <BookmarkItem key={b._id} bookmark={b} viewMode={activeViewMode} />
+                  <BookmarkItem key={b._id} bookmark={b} viewMode={activeViewMode} folderName={displayTitle} />
                 ))}
               </div>
             </div>
@@ -91,7 +91,7 @@ export default function FolderPage() {
           <div className={activeViewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" : "space-y-3"}>
             {unpinnedBookmarks.length > 0 ? (
               unpinnedBookmarks.map((b) => (
-                <BookmarkItem key={b._id} bookmark={b} viewMode={activeViewMode} />
+                <BookmarkItem key={b._id} bookmark={b} viewMode={activeViewMode} folderName={displayTitle} />
               ))
             ) : (
               pinnedBookmarks.length === 0 && (

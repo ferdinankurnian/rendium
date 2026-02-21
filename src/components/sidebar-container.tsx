@@ -61,11 +61,11 @@ export function Sidebar({
             isTrashView={isTrashView}
             setTrashView={setTrashView}
           />
-          <div className="mt-auto p-2 flex flex-row justify-between">
+          <div className="mt-auto p-2 flex flex-row justify-between items-center">
             <ThemeToggle />
-            <Button 
-              variant={isSettingsPage ? 'secondary' : 'ghost'} 
-              size="icon" 
+            <Button
+              variant={isSettingsPage ? 'secondary' : 'ghost'}
+              size="icon"
               onClick={handleSettingsClick}
               disabled={isPending}
             >
@@ -98,11 +98,11 @@ export function Sidebar({
             isTrashView={isTrashView}
             setTrashView={setTrashView}
           />
-          <div className="mt-auto p-2 flex flex-row justify-between">
+          <div className="mt-auto p-2 flex flex-row justify-between items-center">
             <ThemeToggle />
-            <Button 
-              variant={isSettingsPage ? 'secondary' : 'ghost'} 
-              size="icon" 
+            <Button
+              variant={isSettingsPage ? 'secondary' : 'ghost'}
+              size="icon"
               onClick={handleSettingsClick}
               disabled={isPending}
             >

@@ -1,9 +1,7 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { authTables } from "@convex-dev/auth/server";
 
 export default defineSchema({
-  ...authTables,
   bookmarks: defineTable({
     title: v.string(),
     url: v.string(),
@@ -13,19 +11,20 @@ export default defineSchema({
     pinned: v.boolean(),
     isDeleted: v.boolean(),
     deletedAt: v.optional(v.number()),
-    userId: v.optional(v.string()),
+    userId: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_user", ["userId"])
     .index("by_folder", ["folderId"])
+    .index("by_user_folder", ["userId", "folderId"])
     .index("by_pinned", ["pinned"])
     .index("by_status", ["isDeleted"]),
 
   folders: defineTable({
     name: v.string(),
     color: v.optional(v.string()),
-    userId: v.optional(v.string()),
+    userId: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

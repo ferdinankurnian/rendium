@@ -5,24 +5,26 @@ import { api } from '@/convex/_generated/api'
 import { Sidebar } from './sidebar-container'
 import { RightSidebar } from './right-sidebar'
 import { useUIStore } from '@/store/bookmark-store'
+import { usePathname } from 'next/navigation'
 
 export function SidebarWrapper({ children }: { children: React.ReactNode }) {
   const folders = useQuery(api.folders.list) || []
+  const pathname = usePathname()
   
-  const { 
-    activeFolder, 
-    setActiveFolder 
-  } = useUIStore()
+  const { setActiveFolder } = useUIStore()
   
-  // Logic isTrashView kita ambil dari URL aja biar lebih "web"
-  const isTrashView = false 
+  const isTrashView = pathname === '/trash'
   const setTrashView = () => {}
+
+  // Derive active folder from URL so direct navigation + back/forward works
+  const folderMatch = pathname.match(/^\/folder\/([^/?]+)/)
+  const activeFolderFromUrl = folderMatch ? folderMatch[1] : null
   
   return (
     <div className="min-h-screen bg-background">
       <div className="flex h-screen overflow-hidden relative">
         <Sidebar
-          activeFolder={activeFolder}
+          activeFolder={activeFolderFromUrl}
           setActiveFolder={setActiveFolder}
           folders={folders}
           isTrashView={isTrashView}

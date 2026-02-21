@@ -2,9 +2,9 @@
 
 import { useRef, useState } from 'react'
 import Image from 'next/image'
-import { Moon, Sun, Monitor, Download, Trash2, Upload, Loader2, LogOut, User } from 'lucide-react'
+import { Moon, Sun, Monitor, Download, Trash2, Upload, Loader2, LogOut, User, Smartphone, Globe, Laptop } from 'lucide-react'
 import { useQuery, useMutation } from 'convex/react'
-import { useAuthActions } from "@convex-dev/auth/react"
+import { useUser, useClerk, useSessionList, useSession } from "@clerk/nextjs"
 
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
@@ -26,17 +26,18 @@ import {
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme()
-  const { signOut } = useAuthActions()
+  const { signOut } = useClerk()
+  const { user } = useUser()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [importStatus, setImportStatus] = useState<{ title: string, message: string } | null>(null)
   const [loadingStates, setLoadingStates] = useState({
     trash: false,
     clearAll: false,
-    import: false
+    import: false,
+    signOut: false,
+    sessions: {} as Record<string, boolean>
   })
-
-  const user = useQuery(api.users.viewer)
   const bookmarks = useQuery(api.bookmarks.list, {}) || []
   const trashBookmarks = useQuery(api.bookmarks.listTrash) || []
   const folders = useQuery(api.folders.list) || []
@@ -46,11 +47,65 @@ export default function SettingsPage() {
   const removePermanently = useMutation(api.bookmarks.remove)
   const removeFolder = useMutation(api.folders.remove)
 
-  const maskEmail = (email?: string) => {
+  const { sessions, isLoaded: sessionsLoaded } = useSessionList()
+  const { session: currentSession } = useSession()
+
+  const maskEmail = (email?: string | null) => {
     if (!email) return ""
     const [local, domain] = email.split("@")
     if (local.length <= 2) return `${local[0]}***@${domain}`
     return `${local.slice(0, 2)}***@${domain}`
+  }
+
+  const handleSignOut = async () => {
+    setLoadingStates(prev => ({ ...prev, signOut: true }))
+    try {
+      await signOut({ redirectUrl: "/login" })
+    } finally {
+      setLoadingStates(prev => ({ ...prev, signOut: false }))
+    }
+  }
+
+  const handleRevokeSession = async (sessionId: string) => {
+    setLoadingStates(prev => ({
+      ...prev,
+      sessions: { ...prev.sessions, [sessionId]: true }
+    }))
+    try {
+      const session = sessions?.find(s => s.id === sessionId)
+      if (session) {
+        await session.revoke()
+        // If revoking current session, sign out and redirect
+        if (sessionId === currentSession?.id) {
+          await signOut({ redirectUrl: "/login" })
+        }
+      }
+    } finally {
+      setLoadingStates(prev => ({
+        ...prev,
+        sessions: { ...prev.sessions, [sessionId]: false }
+      }))
+    }
+  }
+
+  const formatLastActive = (date: Date) => {
+    const now = new Date()
+    const diff = now.getTime() - date.getTime()
+    const minutes = Math.floor(diff / 60000)
+    const hours = Math.floor(diff / 3600000)
+    const days = Math.floor(diff / 86400000)
+
+    if (minutes < 1) return 'Just now'
+    if (minutes < 60) return `${minutes}m ago`
+    if (hours < 24) return `${hours}h ago`
+    if (days < 7) return `${days}d ago`
+    return date.toLocaleDateString()
+  }
+
+  const getDeviceIcon = (userAgent?: string) => {
+    if (!userAgent) return Globe
+    if (/mobile|android|iphone/i.test(userAgent)) return Smartphone
+    return Laptop
   }
 
   const handleExport = () => {
@@ -117,6 +172,14 @@ export default function SettingsPage() {
           if (a) {
             const url = a.getAttribute('href') || ''
             const title = a.textContent || ''
+
+            // Skip invalid or non-HTTP URLs
+            try {
+              const parsed = new URL(url)
+              if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') continue
+            } catch {
+              continue
+            }
             
             let folderName = ''
             let folderColor = ''
@@ -206,15 +269,15 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="h-12 w-12 rounded-full overflow-hidden border bg-muted flex items-center justify-center">
-                {user?.image ? (
-                  <Image src={user.image} alt={user.name || "User"} width={48} height={48} className="h-full w-full object-cover" />
+                {user?.imageUrl ? (
+                  <Image src={user.imageUrl} alt={user.fullName || "User"} width={48} height={48} className="h-full w-full object-cover" />
                 ) : (
                   <User className="h-6 w-6 text-muted-foreground" />
                 )}
               </div>
               <div>
-                <p className="font-medium text-lg">{user?.name || "Anonymous"}</p>
-                <p className="text-sm text-muted-foreground">{maskEmail(user?.email)}</p>
+                <p className="font-medium text-lg">{user?.fullName || "Anonymous"}</p>
+                <p className="text-sm text-muted-foreground">{maskEmail(user?.primaryEmailAddress?.emailAddress)}</p>
               </div>
             </div>
             <AlertDialog>
@@ -231,8 +294,13 @@ export default function SettingsPage() {
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => void signOut()}>
+                  <AlertDialogCancel disabled={loadingStates.signOut}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleSignOut}
+                    disabled={loadingStates.signOut}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {loadingStates.signOut && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Sign Out
                   </AlertDialogAction>
                 </AlertDialogFooter>
@@ -241,7 +309,89 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
-      
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="h-5 w-5" /> Active Sessions
+          </CardTitle>
+          <CardDescription>Manage your active sessions across devices</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {!sessionsLoaded ? (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading sessions...
+            </div>
+          ) : sessions?.length === 0 ? (
+            <p className="text-muted-foreground">No active sessions found.</p>
+          ) : (
+            sessions?.map((session) => {
+              const DeviceIcon = getDeviceIcon(session.user?.primaryEmailAddress?.emailAddress)
+              const isCurrentSession = session.id === currentSession?.id
+              return (
+                <div key={session.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center">
+                      <DeviceIcon className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">
+                          {session.user?.primaryEmailAddress?.emailAddress?.split('@')[0] || 'Unknown Device'}
+                        </p>
+                        {isCurrentSession && (
+                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                            Current
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Active {formatLastActive(session.lastActiveAt)}
+                      </p>
+                    </div>
+                  </div>
+                  {!isCurrentSession && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={loadingStates.sessions[session.id]}
+                        >
+                          {loadingStates.sessions[session.id] ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            'Revoke'
+                          )}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Revoke Session?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will sign out this device immediately.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleRevokeSession(session.id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Revoke
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
+              )
+            })
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -252,15 +402,15 @@ export default function SettingsPage() {
         <CardContent>
           <div className="flex gap-2">
             {[ 
-              { name: 'light', icon: Sun, label: 'Light' },
-              { name: 'dark', icon: Moon, label: 'Dark' },
-              { name: 'system', icon: Monitor, label: 'System' }
+              { name: 'light' as const, icon: Sun, label: 'Light' },
+              { name: 'dark' as const, icon: Moon, label: 'Dark' },
+              { name: 'system' as const, icon: Monitor, label: 'System' }
             ].map(({ name, icon: Icon, label }) => (
               <Button 
                 key={name}
                 variant={theme === name ? 'default' : 'outline'}
                 size="sm" 
-                onClick={() => setTheme(name as any)}
+                onClick={() => setTheme(name)}
               >
                 <Icon className="h-4 w-4 mr-2" /> {label}
               </Button>

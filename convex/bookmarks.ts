@@ -1,34 +1,42 @@
 import { v } from "convex/values";
-import { mutation, query, action } from "./_generated/server";
-import { api } from "./_generated/api";
+import { mutation, query, action, internalMutation } from "./_generated/server";
+import { api, internal } from "./_generated/api";
 import * as cheerio from 'cheerio';
-import { getAuthUserId } from "@convex-dev/auth/server";
 
 export const list = query({
   args: { folderId: v.optional(v.id("folders")) },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const identity = await ctx.auth.getUserIdentity();
+    const userId = identity?.subject;
     if (!userId) {
       return [];
     }
 
-    const q = ctx.db
+    if (args.folderId) {
+      return await ctx.db
+        .query("bookmarks")
+        .withIndex("by_user_folder", (q) =>
+          q.eq("userId", userId).eq("folderId", args.folderId)
+        )
+        .filter((q) => q.eq(q.field("isDeleted"), false))
+        .order("desc")
+        .collect();
+    }
+
+    return await ctx.db
       .query("bookmarks")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("isDeleted"), false));
-
-    if (args.folderId) {
-      const bookmarks = await q.collect();
-      return bookmarks.filter((b) => b.folderId === args.folderId);
-    }
-    return await q.order("desc").collect();
+      .filter((q) => q.eq(q.field("isDeleted"), false))
+      .order("desc")
+      .collect();
   },
 });
 
 export const count = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const identity = await ctx.auth.getUserIdentity();
+    const userId = identity?.subject;
     if (!userId) {
       return 0;
     }
@@ -46,7 +54,8 @@ export const count = query({
 export const listTrash = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const identity = await ctx.auth.getUserIdentity();
+    const userId = identity?.subject;
     if (!userId) {
       return [];
     }
@@ -70,7 +79,8 @@ export const create = mutation({
     pinned: v.boolean(),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const identity = await ctx.auth.getUserIdentity();
+    const userId = identity?.subject;
     if (!userId) {
       throw new Error("Unauthorized");
     }
@@ -84,7 +94,6 @@ export const create = mutation({
       updatedAt: Date.now(),
     });
 
-    // Jalankan scraping di background ko, biar gak nungguin
     await ctx.scheduler.runAfter(0, api.bookmarks.scrapeMetadataAction, {
       id: bookmarkId,
       url: args.url,
@@ -102,7 +111,8 @@ export const updateMetadata = mutation({
     ogImage: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const identity = await ctx.auth.getUserIdentity();
+    const userId = identity?.subject;
     const bookmark = await ctx.db.get(args.id);
     if (!bookmark || bookmark.userId !== userId) {
       throw new Error("Unauthorized");
@@ -131,23 +141,22 @@ export const scrapeMetadataAction = action({
       const html = await response.text();
       const $ = cheerio.load(html);
 
-      const title = $('meta[property="og:title"]').attr('content') || 
-                    $('title').text().trim() || 
+      const title = $('meta[property="og:title"]').attr('content') ||
+                    $('title').text().trim() ||
                     new URL(args.url).hostname;
-      
-      const description = $('meta[property="og:description"]').attr('content') || 
+
+      const description = $('meta[property="og:description"]').attr('content') ||
                           $('meta[name="description"]').attr('content') || '';
-      
-      let ogImage = $('meta[property="og:image"]').attr('content') || 
+
+      let ogImage = $('meta[property="og:image"]').attr('content') ||
                     $('meta[name="twitter:image"]').attr('content') || '';
 
-      // Fix relative image URL
       if (ogImage && !ogImage.startsWith('http')) {
         const urlObj = new URL(args.url);
         ogImage = `${urlObj.protocol}//${urlObj.host}${ogImage.startsWith('/') ? '' : '/'}${ogImage}`;
       }
 
-      await ctx.runMutation(api.bookmarks.updateMetadataInternal, {
+      await ctx.runMutation(internal.bookmarks.updateMetadataInternal, {
         id: args.id,
         title,
         description,
@@ -159,8 +168,7 @@ export const scrapeMetadataAction = action({
   },
 });
 
-// internal mutation buat background task, biar gak kena check userId (karena action gak ada context user)
-export const updateMetadataInternal = mutation({
+export const updateMetadataInternal = internalMutation({
   args: {
     id: v.id("bookmarks"),
     title: v.optional(v.string()),
@@ -179,7 +187,8 @@ export const updateMetadataInternal = mutation({
 export const moveToTrash = mutation({
   args: { id: v.id("bookmarks") },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const identity = await ctx.auth.getUserIdentity();
+    const userId = identity?.subject;
     const bookmark = await ctx.db.get(args.id);
     if (!bookmark || bookmark.userId !== userId) {
       throw new Error("Unauthorized");
@@ -191,7 +200,8 @@ export const moveToTrash = mutation({
 export const restoreFromTrash = mutation({
   args: { id: v.id("bookmarks") },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const identity = await ctx.auth.getUserIdentity();
+    const userId = identity?.subject;
     const bookmark = await ctx.db.get(args.id);
     if (!bookmark || bookmark.userId !== userId) {
       throw new Error("Unauthorized");
@@ -203,7 +213,8 @@ export const restoreFromTrash = mutation({
 export const remove = mutation({
   args: { id: v.id("bookmarks") },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const identity = await ctx.auth.getUserIdentity();
+    const userId = identity?.subject;
     const bookmark = await ctx.db.get(args.id);
     if (!bookmark || bookmark.userId !== userId) {
       throw new Error("Unauthorized");
@@ -215,7 +226,8 @@ export const remove = mutation({
 export const togglePin = mutation({
   args: { id: v.id("bookmarks"), pinned: v.boolean() },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const identity = await ctx.auth.getUserIdentity();
+    const userId = identity?.subject;
     const bookmark = await ctx.db.get(args.id);
     if (!bookmark || bookmark.userId !== userId) {
       throw new Error("Unauthorized");
@@ -227,10 +239,17 @@ export const togglePin = mutation({
 export const moveToFolder = mutation({
   args: { id: v.id("bookmarks"), folderId: v.optional(v.id("folders")) },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const identity = await ctx.auth.getUserIdentity();
+    const userId = identity?.subject;
     const bookmark = await ctx.db.get(args.id);
     if (!bookmark || bookmark.userId !== userId) {
       throw new Error("Unauthorized");
+    }
+    if (args.folderId) {
+      const targetFolder = await ctx.db.get(args.folderId);
+      if (!targetFolder || targetFolder.userId !== userId) {
+        throw new Error("Unauthorized");
+      }
     }
     await ctx.db.patch(args.id, { folderId: args.folderId, updatedAt: Date.now() });
   },

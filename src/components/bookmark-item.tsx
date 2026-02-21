@@ -68,7 +68,7 @@ export function BookmarkItem({ bookmark, viewMode, folderName, isTrashView = fal
   const moveToFolder = useMutation(api.bookmarks.moveToFolder)
   const folders = useQuery(api.folders.list) || []
   
-  const domain = new URL(bookmark.url).hostname
+  const domain = (() => { try { return new URL(bookmark.url).hostname } catch { return '' } })()
   const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
 
   const handleCardClick = () => {
