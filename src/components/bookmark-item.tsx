@@ -190,11 +190,11 @@ export function BookmarkItem({ bookmark, viewMode, folderName, isTrashView = fal
   const renderBaseContent = () => {
     if (viewMode === 'grid') {
       return (
-        <Card 
+        <Card
           className={`${cardStyle} h-full flex flex-col overflow-hidden gap-4 p-0 ${!isTrashView ? 'cursor-pointer hover:shadow-lg' : ''}`}
           onClick={handleCardClick}
         >
-          <div className="w-full h-32 overflow-hidden bg-muted relative flex items-center justify-center">
+          <div className="w-full aspect-[1.91/1] overflow-hidden bg-muted relative flex items-center justify-center">
             {bookmark.ogImage ? (
               <Image src={bookmark.ogImage} alt="" fill unoptimized className="object-cover transition-transform" />
             ) : (
@@ -221,7 +221,7 @@ export function BookmarkItem({ bookmark, viewMode, folderName, isTrashView = fal
           className={`${cardStyle} flex flex-col sm:flex-row gap-4 p-3 rounded-xl border bg-card hover:bg-accent/50 ${!isTrashView ? 'cursor-pointer' : ''}`}
           onClick={handleCardClick}
         >
-          <div className="w-full sm:w-40 h-24 sm:h-32 rounded-lg overflow-hidden bg-muted border flex-shrink-0 relative flex items-center justify-center">
+          <div className="w-full sm:w-52 aspect-[1.91/1] sm:aspect-[1.91/1] rounded-lg overflow-hidden bg-muted border flex-shrink-0 relative flex items-center justify-center">
             {bookmark.ogImage ? (
               <Image src={bookmark.ogImage} alt="" fill unoptimized className="object-cover transition-transform" />
             ) : (

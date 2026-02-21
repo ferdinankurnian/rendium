@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Sidebar } from './sidebar-container'
@@ -9,8 +10,7 @@ import { RightSidebar } from './right-sidebar'
 import { useUIStore } from '@/store/bookmark-store'
 import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Menu } from 'lucide-react'
-import { AddBookmarkPopover } from './add-bookmark-popover'
+import { Menu, Settings } from 'lucide-react'
 
 export function SidebarWrapper({ children }: { children: React.ReactNode }) {
   const folders = useQuery(api.folders.list) || []
@@ -20,6 +20,7 @@ export function SidebarWrapper({ children }: { children: React.ReactNode }) {
   const { setActiveFolder } = useUIStore()
 
   const isTrashView = pathname === '/trash'
+  const isSettingsPage = pathname === '/settings'
   const setTrashView = () => {}
 
   // Derive active folder from URL so direct navigation + back/forward works
@@ -50,7 +51,14 @@ export function SidebarWrapper({ children }: { children: React.ReactNode }) {
           <span className="font-semibold">Rendium</span>
         </div>
 
-        <AddBookmarkPopover />
+        <Link href="/settings">
+          <Button
+            variant={isSettingsPage ? 'secondary' : 'ghost'}
+            size="icon"
+          >
+            <Settings className="h-5 w-5" />
+          </Button>
+        </Link>
       </div>
 
       <div className="flex h-screen overflow-hidden relative">
