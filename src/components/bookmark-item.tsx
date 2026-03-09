@@ -56,10 +56,24 @@ interface BookmarkItemProps {
   }
   viewMode: 'grid' | 'list' | 'detailed'
   folderName?: string | null
+  folderColor?: string | null
   isTrashView?: boolean
 }
 
-export function BookmarkItem({ bookmark, viewMode, folderName, isTrashView = false }: BookmarkItemProps) {
+const getFolderColorClasses = (color?: string | null) => {
+  switch (color) {
+    case 'red': return 'bg-red-500/10 text-red-600 border-red-200 dark:border-red-800';
+    case 'orange': return 'bg-orange-500/10 text-orange-600 border-orange-200 dark:border-orange-800';
+    case 'yellow': return 'bg-yellow-500/10 text-yellow-600 border-yellow-200 dark:border-yellow-800';
+    case 'green': return 'bg-green-500/10 text-green-600 border-green-200 dark:border-green-800';
+    case 'blue': return 'bg-blue-500/10 text-blue-600 border-blue-200 dark:border-blue-800';
+    case 'purple': return 'bg-purple-500/10 text-purple-600 border-purple-200 dark:border-purple-800';
+    case 'pink': return 'bg-pink-500/10 text-pink-600 border-pink-200 dark:border-pink-800';
+    default: return 'bg-muted text-muted-foreground';
+  }
+}
+
+export function BookmarkItem({ bookmark, viewMode, folderName, folderColor, isTrashView = false }: BookmarkItemProps) {
   const [copied, setCopied] = useState(false)
   const togglePin = useMutation(api.bookmarks.togglePin)
   const moveToTrash = useMutation(api.bookmarks.moveToTrash)
@@ -208,7 +222,7 @@ export function BookmarkItem({ bookmark, viewMode, folderName, isTrashView = fal
             </CardTitle>
             {bookmark.description && <CardDescription className="line-clamp-2 text-xs mt-1">{bookmark.description}</CardDescription>}
             <p className="text-[11px] text-muted-foreground truncate">{domain}</p>
-            {folderName && <Badge variant="outline" className="mt-2 text-[9px] h-4">{folderName}</Badge>}
+            {folderName && <Badge variant="outline" className={`mt-2 text-[9px] h-4 ${getFolderColorClasses(folderColor)}`}>{folderName}</Badge>}
           </CardContent>
           <ActionButtons className="absolute top-3 right-3 rounded-lg bg-background/90 backdrop-blur-sm border shadow-sm p-1 opacity-0 group-hover:opacity-100 transition-all translate-x-1 group-hover:translate-x-0" />
         </Card>
@@ -237,7 +251,7 @@ export function BookmarkItem({ bookmark, viewMode, folderName, isTrashView = fal
             <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{bookmark.description || bookmark.url}</p>
             <div className="flex items-center gap-2">
               <p className="text-sm text-muted-foreground truncate">{domain}</p>
-              {folderName && <Badge variant="secondary" className="text-[9px] py-0 px-1.5 h-4">{folderName}</Badge>}
+              {folderName && <Badge className={`text-[9px] py-0 px-1.5 h-4 border ${getFolderColorClasses(folderColor)}`}>{folderName}</Badge>}
             </div>
           </div>
 
@@ -257,7 +271,7 @@ export function BookmarkItem({ bookmark, viewMode, folderName, isTrashView = fal
             <h3 className="font-medium text-sm truncate">{bookmark.title}</h3>
             <p className="text-[11px] text-muted-foreground truncate">{bookmark.url}</p>
           </div>
-          {folderName && <Badge variant="outline" className="text-[9px] h-4 px-1">{folderName}</Badge>}
+          {folderName && <Badge variant="outline" className={`text-[9px] h-4 px-1 ${getFolderColorClasses(folderColor)}`}>{folderName}</Badge>}
         </div>
         
         <ActionButtons className="absolute right-3 rounded-lg bg-background/90 backdrop-blur-sm border shadow-sm p-1 opacity-0 group-hover:opacity-100 transition-all translate-x-1 group-hover:translate-x-0" />
