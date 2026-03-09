@@ -1,6 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { SidebarWrapper } from "@/components/sidebar-wrapper";
 
 export default async function AppLayout({
   children,
@@ -10,5 +9,5 @@ export default async function AppLayout({
   const { userId } = await auth();
   if (!userId) redirect("/login");
 
-  return <SidebarWrapper>{children}</SidebarWrapper>;
+  return children;
 }

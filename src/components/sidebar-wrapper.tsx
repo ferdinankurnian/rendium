@@ -2,30 +2,21 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
 import { useQuery } from 'convex/react'
+import { Link, useLocation } from 'react-router'
+
 import { api } from '@/convex/_generated/api'
 import { Sidebar } from './sidebar-container'
 import { RightSidebar } from './right-sidebar'
-import { useUIStore } from '@/store/bookmark-store'
-import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Menu, Settings } from 'lucide-react'
 
 export function SidebarWrapper({ children }: { children: React.ReactNode }) {
   const folders = useQuery(api.folders.list) || []
-  const pathname = usePathname()
+  const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  const { setActiveFolder } = useUIStore()
-
-  const isTrashView = pathname === '/trash'
-  const isSettingsPage = pathname === '/settings'
-  const setTrashView = () => {}
-
-  // Derive active folder from URL so direct navigation + back/forward works
-  const folderMatch = pathname.match(/^\/folder\/([^/?]+)/)
-  const activeFolderFromUrl = folderMatch ? folderMatch[1] : null
+  const isSettingsPage = location.pathname === '/settings'
 
   return (
     <div className="min-h-screen bg-background">
@@ -51,23 +42,21 @@ export function SidebarWrapper({ children }: { children: React.ReactNode }) {
           <span className="font-semibold">Rendium</span>
         </div>
 
-        <Link href="/settings">
-          <Button
-            variant={isSettingsPage ? 'secondary' : 'ghost'}
-            size="icon"
-          >
+        <Button
+          asChild
+          variant={isSettingsPage ? 'secondary' : 'ghost'}
+          size="icon"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <Link to="/settings">
             <Settings className="h-5 w-5" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
 
       <div className="flex h-screen overflow-hidden relative">
         <Sidebar
-          activeFolder={activeFolderFromUrl}
-          setActiveFolder={setActiveFolder}
           folders={folders}
-          isTrashView={isTrashView}
-          setTrashView={setTrashView}
           mobileOpen={mobileMenuOpen}
           setMobileOpen={setMobileMenuOpen}
         />

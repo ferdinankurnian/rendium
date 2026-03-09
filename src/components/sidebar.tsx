@@ -1,49 +1,47 @@
 "use client"
 
 import { BookOpen, Trash2 } from 'lucide-react'
+import { useState, useTransition } from 'react'
+import { useLocation, useNavigate } from 'react-router'
+
 import { Button } from '@/components/ui/button'
 import { AddFolderPopover } from '@/components/add-folder-popover'
 import { FolderItem } from '@/components/folder-item'
 import { Doc } from '@/convex/_generated/dataModel'
-import { useRouter, usePathname } from 'next/navigation'
-import { useState, useTransition } from 'react'
 import { Spinner } from '@/components/ui/spinner'
 
 interface SidebarContentProps {
-  activeFolder: string | null
-  setActiveFolder: (folderId: string | null) => void
   folders: Doc<"folders">[]
-  isTrashView: boolean
-  setTrashView: (isTrash: boolean) => void
+  onNavigate?: () => void
 }
 
 export function SidebarContent({
-  activeFolder,
-  setActiveFolder,
   folders,
-  isTrashView,
-  setTrashView,
+  onNavigate,
 }: SidebarContentProps) {
-  const router = useRouter()
-  const pathname = usePathname()
+  const navigate = useNavigate()
+  const location = useLocation()
   const [isPending, startTransition] = useTransition()
   const [pendingPath, setPendingPath] = useState<string | null>(null)
-  
+
+  const pathname = location.pathname
+  const activeFolder = pathname.startsWith('/folder/')
+    ? pathname.split('/')[2] ?? null
+    : null
   const isAllBookmarksPage = pathname === '/'
   const isTrashPage = pathname === '/trash'
+  const isFolderView = pathname.startsWith('/folder/')
 
-  const handleNavigate = (path: string, folderId: string | null = null) => {
+  const handleNavigate = (path: string) => {
+    if (path === pathname + location.search) {
+      onNavigate?.()
+      return
+    }
+
     setPendingPath(path)
     startTransition(() => {
-      if (folderId !== undefined) {
-        setActiveFolder(folderId)
-      }
-      if (path === '/trash') {
-        setTrashView(true)
-      } else if (path === '/') {
-        setTrashView(false)
-      }
-      router.push(path)
+      navigate(path)
+      onNavigate?.()
     })
   }
   
@@ -87,9 +85,9 @@ export function SidebarContent({
               <FolderItem
                 key={folder._id}
                 folder={folder}
-                isActive={!isTrashView && activeFolder === folder._id}
+                isActive={isFolderView && activeFolder === folder._id}
                 isLoading={isPending && pendingPath === folderPath}
-                onClick={() => handleNavigate(folderPath, folder._id)}
+                onClick={() => handleNavigate(folderPath)}
               />
             )
           })}

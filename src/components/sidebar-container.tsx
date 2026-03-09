@@ -4,41 +4,35 @@ import Image from 'next/image'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Settings } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router'
+import { useTransition } from 'react'
+
 import { SidebarContent } from './sidebar'
 import { Doc } from '@/convex/_generated/dataModel'
 import { ThemeToggle } from '@/components/theme-toggle'
-import { useRouter, usePathname } from 'next/navigation'
-import { useTransition } from 'react'
 import { Spinner } from '@/components/ui/spinner'
 
 interface SidebarProps {
-  activeFolder: string | null
-  setActiveFolder: (folderId: string | null) => void
   folders: Doc<"folders">[]
-  isTrashView: boolean
-  setTrashView: (isTrash: boolean) => void
   mobileOpen: boolean
   setMobileOpen: (open: boolean) => void
 }
 
 export function Sidebar({
-  activeFolder,
-  setActiveFolder,
   folders,
-  isTrashView,
-  setTrashView,
   mobileOpen,
   setMobileOpen,
 }: SidebarProps) {
-  const router = useRouter()
-  const pathname = usePathname()
+  const navigate = useNavigate()
+  const location = useLocation()
   const [isPending, startTransition] = useTransition()
 
-  const isSettingsPage = pathname === '/settings'
+  const isSettingsPage = location.pathname === '/settings'
 
   const handleSettingsClick = () => {
     startTransition(() => {
-      router.push('/settings')
+      navigate('/settings')
+      setMobileOpen(false)
     })
   }
 
@@ -57,11 +51,8 @@ export function Sidebar({
             />
           </div>
           <SidebarContent
-            activeFolder={activeFolder}
-            setActiveFolder={setActiveFolder}
             folders={folders}
-            isTrashView={isTrashView}
-            setTrashView={setTrashView}
+            onNavigate={() => setMobileOpen(false)}
           />
           <div className="mt-auto p-2 flex flex-row justify-between items-center">
             <ThemeToggle />
@@ -89,11 +80,8 @@ export function Sidebar({
             />
           </div>
           <SidebarContent
-            activeFolder={activeFolder}
-            setActiveFolder={setActiveFolder}
             folders={folders}
-            isTrashView={isTrashView}
-            setTrashView={setTrashView}
+            onNavigate={() => setMobileOpen(false)}
           />
           <div className="mt-auto p-2 flex flex-row justify-between items-center">
             <ThemeToggle />
