@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { Pin, Trash2, Link as LinkIcon, Copy, Check, RotateCcw, XCircle, ExternalLink, Folder } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
@@ -215,14 +215,13 @@ export function BookmarkItem({ bookmark, viewMode, folderName, folderColor, isTr
               <LinkIcon className="text-muted-foreground/20 size-8" />
             )}
           </div>
-          <CardContent className="p-4 pt-0 space-y-2">
-            <CardTitle className="text-sm truncate flex-1 mr-2 flex items-center gap-2">
+          <CardContent className="p-4 pt-0 space-y-2.5">
+            <CardTitle className="flex items-start gap-2 text-sm leading-snug">
               <Image src={faviconUrl} alt="" width={16} height={16} unoptimized className="flex-shrink-0" />
-              <span>{bookmark.title}</span>
+              <span className="line-clamp-2">{bookmark.title}</span>
             </CardTitle>
-            {bookmark.description && <CardDescription className="line-clamp-2 text-xs mt-1">{bookmark.description}</CardDescription>}
-            <p className="text-[11px] text-muted-foreground truncate">{domain}</p>
-            {folderName && <Badge variant="outline" className={`mt-2 text-[9px] h-4 ${getFolderColorClasses(folderColor)}`}>{folderName}</Badge>}
+            <p className="text-[11px] text-muted-foreground truncate">{bookmark.url}</p>
+            {folderName && <Badge variant="outline" className={`text-[9px] h-4 w-fit ${getFolderColorClasses(folderColor)}`}>{folderName}</Badge>}
           </CardContent>
           <ActionButtons className="absolute top-3 right-3 rounded-lg bg-background/90 backdrop-blur-sm border shadow-sm p-1 opacity-0 group-hover:opacity-100 transition-all translate-x-1 group-hover:translate-x-0" />
         </Card>

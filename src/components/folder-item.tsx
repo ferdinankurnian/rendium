@@ -30,6 +30,7 @@ import {
   PopoverContent,
   PopoverAnchor,
 } from "@/components/ui/popover"
+import { cn } from '@/lib/utils'
 
 interface FolderItemProps {
   folder: Doc<"folders">
@@ -37,6 +38,32 @@ interface FolderItemProps {
   isLoading?: boolean
   onClick: () => void
 }
+
+const playlistTileMap = {
+  red: 'from-red-600 via-red-500 to-rose-300',
+  orange: 'from-orange-600 via-orange-500 to-amber-300',
+  yellow: 'from-yellow-600 via-yellow-500 to-lime-300',
+  green: 'from-emerald-600 via-green-500 to-teal-300',
+  blue: 'from-sky-700 via-blue-500 to-cyan-300',
+  purple: 'from-violet-700 via-purple-500 to-fuchsia-300',
+  pink: 'from-pink-700 via-pink-500 to-rose-300',
+} as const
+
+const playlistDotMap = {
+  red: 'bg-red-500',
+  orange: 'bg-orange-500',
+  yellow: 'bg-yellow-500',
+  green: 'bg-green-500',
+  blue: 'bg-blue-500',
+  purple: 'bg-purple-500',
+  pink: 'bg-pink-500',
+} as const
+
+const getPlaylistTileClasses = (color?: string) =>
+  playlistTileMap[color as keyof typeof playlistTileMap] ?? 'from-zinc-700 via-zinc-500 to-zinc-300'
+
+const getPlaylistDotClasses = (color?: string) =>
+  playlistDotMap[color as keyof typeof playlistDotMap] ?? 'bg-zinc-400'
 
 export function FolderItem({ folder, isActive, isLoading, onClick }: FolderItemProps) {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false)
@@ -87,25 +114,12 @@ export function FolderItem({ folder, isActive, isLoading, onClick }: FolderItemP
     { value: 'pink', label: 'Pink', bg: 'bg-pink-500', border: 'border-pink-500' },
   ]
 
-  const colorMap = {
-    red: 'bg-red-500',
-    orange: 'bg-orange-500',
-    yellow: 'bg-yellow-500',
-    green: 'bg-green-500',
-    blue: 'bg-blue-500',
-    purple: 'bg-purple-500',
-    pink: 'bg-pink-500',
-  }
-
-  const textColorMap = {
-    red: 'text-red-500',
-    orange: 'text-orange-500',
-    yellow: 'text-yellow-500',
-    green: 'text-green-500',
-    blue: 'text-blue-500',
-    purple: 'text-purple-500',
-    pink: 'text-pink-500',
-  }
+  const folderInitials = folder.name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('')
 
   return (
     <>
@@ -114,29 +128,56 @@ export function FolderItem({ folder, isActive, isLoading, onClick }: FolderItemP
           <PopoverAnchor asChild>
             <ContextMenuTrigger>
               <Button
-                variant={isActive ? 'secondary' : 'ghost'}
-                className="w-full justify-start mb-1 group relative"
+                variant="ghost"
+                className={cn(
+                  "mb-2 h-auto w-full justify-start gap-3 rounded-2xl border px-2.5 py-2.5 group relative overflow-hidden shadow-none",
+                  "hover:border-border/70 hover:bg-accent/55",
+                  isActive
+                    ? "border-border/80 bg-accent/70 shadow-sm"
+                    : "border-transparent bg-transparent",
+                )}
                 onClick={onClick}
                 disabled={isLoading}
               >
-                <div className="flex items-center gap-2 mr-2">
+                <div
+                  className={cn(
+                    "relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/15 bg-gradient-to-br text-white shadow-sm",
+                    getPlaylistTileClasses(folder.color || undefined),
+                  )}
+                >
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.38),transparent_48%)]" />
                   {isLoading ? (
-                    <Spinner 
-                      className={`${
-                        folder.color && textColorMap[folder.color as keyof typeof textColorMap] 
-                          ? textColorMap[folder.color as keyof typeof textColorMap] 
-                          : ''
-                      }`} 
-                    />
+                    <Spinner className="relative z-10 text-white" />
                   ) : (
-                    <div 
-                      className={`w-3 h-3 rounded-full ${
-                        folder.color && colorMap[folder.color as keyof typeof colorMap] ? colorMap[folder.color as keyof typeof colorMap] : 'bg-gray-400'
-                      }`}
-                    />
+                    <>
+                      <div className="grid h-full w-full grid-cols-2 gap-1 p-1.5 opacity-75">
+                        <div className="rounded-[6px] bg-black/15" />
+                        <div className="rounded-[6px] bg-white/18" />
+                        <div className="rounded-[6px] bg-white/12" />
+                        <div className="rounded-[6px] bg-black/10" />
+                      </div>
+                      <span className="absolute bottom-1 right-1 text-[9px] font-semibold tracking-[0.18em] text-white/90">
+                        {folderInitials || 'FL'}
+                      </span>
+                    </>
                   )}
                 </div>
-                <span className="truncate flex-1 text-left">{folder.name}</span>
+                <div className="min-w-0 flex-1 text-left">
+                  <span className="block truncate text-sm font-medium leading-tight">
+                    {folder.name}
+                  </span>
+                  <span className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                    <span className={cn("size-1.5 rounded-full", getPlaylistDotClasses(folder.color || undefined))} />
+                    Playlist
+                  </span>
+                </div>
+                <span
+                  className={cn(
+                    "size-2 shrink-0 rounded-full transition-opacity",
+                    getPlaylistDotClasses(folder.color || undefined),
+                    isActive ? "opacity-100" : "opacity-0 group-hover:opacity-70",
+                  )}
+                />
               </Button>
             </ContextMenuTrigger>
           </PopoverAnchor>
