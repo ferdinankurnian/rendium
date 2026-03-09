@@ -35,29 +35,27 @@ export default function TrashPage() {
           <Spinner className="size-8" />
           <p className="text-sm text-muted-foreground">Loading trash...</p>
         </div>
-      ) : (
+      ) : trashBookmarks.length > 0 ? (
         <div
           className={
             activeViewMode === "grid"
-              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+              ? "columns-2 lg:columns-3"
               : "space-y-3"
           }
         >
-          {trashBookmarks.length > 0 ? (
-            trashBookmarks.map((bookmark) => (
-              <BookmarkItem
-                key={bookmark._id}
-                bookmark={bookmark}
-                viewMode={activeViewMode}
-                isTrashView={true}
-              />
-            ))
-          ) : (
-            <div className="col-span-full text-center py-12 text-muted-foreground">
-              <Trash2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Your trash is empty.</p>
-            </div>
-          )}
+          {trashBookmarks.map((bookmark) => (
+            <BookmarkItem
+              key={bookmark._id}
+              bookmark={bookmark}
+              viewMode={activeViewMode}
+              isTrashView={true}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12 text-muted-foreground">
+          <Trash2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p>Your trash is empty.</p>
         </div>
       )}
     </div>

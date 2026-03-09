@@ -49,21 +49,8 @@ const playlistTileMap = {
   pink: 'from-pink-700 via-pink-500 to-rose-300',
 } as const
 
-const playlistDotMap = {
-  red: 'bg-red-500',
-  orange: 'bg-orange-500',
-  yellow: 'bg-yellow-500',
-  green: 'bg-green-500',
-  blue: 'bg-blue-500',
-  purple: 'bg-purple-500',
-  pink: 'bg-pink-500',
-} as const
-
 const getPlaylistTileClasses = (color?: string) =>
   playlistTileMap[color as keyof typeof playlistTileMap] ?? 'from-zinc-700 via-zinc-500 to-zinc-300'
-
-const getPlaylistDotClasses = (color?: string) =>
-  playlistDotMap[color as keyof typeof playlistDotMap] ?? 'bg-zinc-400'
 
 export function FolderItem({ folder, isActive, isLoading, onClick }: FolderItemProps) {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false)
@@ -166,18 +153,7 @@ export function FolderItem({ folder, isActive, isLoading, onClick }: FolderItemP
                   <span className="block truncate text-sm font-medium leading-tight">
                     {folder.name}
                   </span>
-                  <span className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                    <span className={cn("size-1.5 rounded-full", getPlaylistDotClasses(folder.color || undefined))} />
-                    Playlist
-                  </span>
                 </div>
-                <span
-                  className={cn(
-                    "size-2 shrink-0 rounded-full transition-opacity",
-                    getPlaylistDotClasses(folder.color || undefined),
-                    isActive ? "opacity-100" : "opacity-0 group-hover:opacity-70",
-                  )}
-                />
               </Button>
             </ContextMenuTrigger>
           </PopoverAnchor>

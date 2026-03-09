@@ -84,6 +84,7 @@ export function BookmarkItem({ bookmark, viewMode, folderName, folderColor, isTr
   
   const domain = (() => { try { return new URL(bookmark.url).hostname } catch { return '' } })()
   const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
+  const cardDescription = bookmark.description?.trim() || domain || "No description yet."
 
   const handleCardClick = () => {
     if (!isTrashView) {
@@ -205,7 +206,7 @@ export function BookmarkItem({ bookmark, viewMode, folderName, folderColor, isTr
     if (viewMode === 'grid') {
       return (
         <Card
-          className={`${cardStyle} h-full flex flex-col overflow-hidden gap-4 p-0 ${!isTrashView ? 'cursor-pointer hover:shadow-lg' : ''}`}
+          className={`${cardStyle} flex flex-col overflow-hidden p-0 ${!isTrashView ? 'cursor-pointer hover:shadow-lg' : ''}`}
           onClick={handleCardClick}
         >
           <div className="w-full aspect-[1.91/1] overflow-hidden bg-muted relative flex items-center justify-center">
@@ -215,13 +216,13 @@ export function BookmarkItem({ bookmark, viewMode, folderName, folderColor, isTr
               <LinkIcon className="text-muted-foreground/20 size-8" />
             )}
           </div>
-          <CardContent className="p-4 pt-0 space-y-2.5">
+          <CardContent className="space-y-2.5 p-4 pt-0">
             <CardTitle className="flex items-start gap-2 text-sm leading-snug">
               <Image src={faviconUrl} alt="" width={16} height={16} unoptimized className="flex-shrink-0" />
               <span className="line-clamp-2">{bookmark.title}</span>
             </CardTitle>
-            <p className="text-[11px] text-muted-foreground truncate">{bookmark.url}</p>
-            {folderName && <Badge variant="outline" className={`text-[9px] h-4 w-fit ${getFolderColorClasses(folderColor)}`}>{folderName}</Badge>}
+            <p className="line-clamp-4 text-xs leading-relaxed text-muted-foreground">{cardDescription}</p>
+            {folderName && <Badge variant="outline" className={`h-4 w-fit text-[9px] ${getFolderColorClasses(folderColor)}`}>{folderName}</Badge>}
           </CardContent>
           <ActionButtons className="absolute top-3 right-3 rounded-lg bg-background/90 backdrop-blur-sm border shadow-sm p-1 opacity-0 group-hover:opacity-100 transition-all translate-x-1 group-hover:translate-x-0" />
         </Card>
@@ -282,7 +283,7 @@ export function BookmarkItem({ bookmark, viewMode, folderName, folderColor, isTr
     <AlertDialog>
       <ContextMenu>
         <ContextMenuTrigger asChild>
-          <div className="h-full">
+          <div className={viewMode === 'grid' ? 'mb-3 break-inside-avoid md:mb-4' : 'h-full'}>
             {renderBaseContent()}
           </div>
         </ContextMenuTrigger>

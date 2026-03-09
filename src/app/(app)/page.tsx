@@ -96,7 +96,7 @@ export default function Home() {
               <div
                 className={
                   activeViewMode === "grid"
-                    ? "grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4"
+                    ? "columns-2 lg:columns-3"
                     : "space-y-3"
                 }
               >
@@ -112,38 +112,40 @@ export default function Home() {
             </div>
           )}
 
-          <div
-            className={
-              activeViewMode === "grid"
-                ? "grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4"
-                : "space-y-3"
-            }
-          >
-            {unpinnedBookmarks.length > 0
-              ? unpinnedBookmarks.map((b) => (
-                  <BookmarkItem
-                    key={b._id}
-                    bookmark={b}
-                    viewMode={activeViewMode}
-                    folderName={getFolderName(b.folderId)}
-                  />
-                ))
-              : pinnedBookmarks.length === 0 && (
-                  <div className="col-span-full text-center py-12 text-muted-foreground">
-                    <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>
-                      No bookmarks yet. Add your first one or{" "}
-                      <Link
-                        href="/settings"
-                        className="text-primary hover:underline underline-offset-4"
-                      >
-                        import
-                      </Link>{" "}
-                      from browser!
-                    </p>
-                  </div>
-                )}
-          </div>
+          {unpinnedBookmarks.length > 0 ? (
+            <div
+              className={
+                activeViewMode === "grid"
+                  ? "columns-2 lg:columns-3"
+                  : "space-y-3"
+              }
+            >
+              {unpinnedBookmarks.map((b) => (
+                <BookmarkItem
+                  key={b._id}
+                  bookmark={b}
+                  viewMode={activeViewMode}
+                  folderName={getFolderName(b.folderId)}
+                />
+              ))}
+            </div>
+          ) : (
+            pinnedBookmarks.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>
+                  No bookmarks yet. Add your first one or{" "}
+                  <Link
+                    href="/settings"
+                    className="text-primary hover:underline underline-offset-4"
+                  >
+                    import
+                  </Link>{" "}
+                  from browser!
+                </p>
+              </div>
+            )
+          )}
         </div>
       )}
     </div>

@@ -93,7 +93,7 @@ export default function FolderPage() {
               <div
                 className={
                   activeViewMode === "grid"
-                    ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                    ? "columns-2 lg:columns-3"
                     : "space-y-3"
                 }
               >
@@ -109,29 +109,31 @@ export default function FolderPage() {
             </div>
           )}
 
-          <div
-            className={
-              activeViewMode === "grid"
-                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-                : "space-y-3"
-            }
-          >
-            {unpinnedBookmarks.length > 0
-              ? unpinnedBookmarks.map((b) => (
-                  <BookmarkItem
-                    key={b._id}
-                    bookmark={b}
-                    viewMode={activeViewMode}
-                    folderName={displayTitle}
-                  />
-                ))
-              : pinnedBookmarks.length === 0 && (
-                  <div className="col-span-full text-center py-12 text-muted-foreground">
-                    <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>This folder is empty. Start adding some bookmarks!</p>
-                  </div>
-                )}
-          </div>
+          {unpinnedBookmarks.length > 0 ? (
+            <div
+              className={
+                activeViewMode === "grid"
+                  ? "columns-2 lg:columns-3"
+                  : "space-y-3"
+              }
+            >
+              {unpinnedBookmarks.map((b) => (
+                <BookmarkItem
+                  key={b._id}
+                  bookmark={b}
+                  viewMode={activeViewMode}
+                  folderName={displayTitle}
+                />
+              ))}
+            </div>
+          ) : (
+            pinnedBookmarks.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>This folder is empty. Start adding some bookmarks!</p>
+              </div>
+            )
+          )}
         </div>
       )}
     </div>
