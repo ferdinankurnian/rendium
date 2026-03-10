@@ -46,6 +46,8 @@ export default function FolderPage() {
   const unpinnedBookmarks = filtered?.filter((b) => !b.pinned) || [];
 
   const activeViewMode = mounted ? viewMode : "grid";
+  const isGridView = activeViewMode === "grid";
+  const orderedBookmarks = [...pinnedBookmarks, ...unpinnedBookmarks];
 
   const toggleViewMode = () => {
     if (activeViewMode === "grid") setViewMode("list");
@@ -84,20 +86,13 @@ export default function FolderPage() {
           <p className="text-sm text-muted-foreground">Loading bookmarks...</p>
         </div>
       ) : (
-        <div className="space-y-8">
-          {pinnedBookmarks.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                Pinned
-              </h2>
+        <>
+          {isGridView ? (
+            orderedBookmarks.length > 0 ? (
               <div
-                className={
-                  activeViewMode === "grid"
-                    ? "columns-2 lg:columns-3"
-                    : "space-y-3"
-                }
+                className="columns-2 lg:columns-3"
               >
-                {pinnedBookmarks.map((b) => (
+                {orderedBookmarks.map((b) => (
                   <BookmarkItem
                     key={b._id}
                     bookmark={b}
@@ -106,35 +101,54 @@ export default function FolderPage() {
                   />
                 ))}
               </div>
-            </div>
-          )}
-
-          {unpinnedBookmarks.length > 0 ? (
-            <div
-              className={
-                activeViewMode === "grid"
-                  ? "columns-2 lg:columns-3"
-                  : "space-y-3"
-              }
-            >
-              {unpinnedBookmarks.map((b) => (
-                <BookmarkItem
-                  key={b._id}
-                  bookmark={b}
-                  viewMode={activeViewMode}
-                  folderName={displayTitle}
-                />
-              ))}
-            </div>
-          ) : (
-            pinnedBookmarks.length === 0 && (
+            ) : (
               <div className="text-center py-12 text-muted-foreground">
                 <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>This folder is empty. Start adding some bookmarks!</p>
               </div>
             )
+          ) : (
+            <div className="space-y-8">
+              {pinnedBookmarks.length > 0 && (
+                <div className="space-y-4">
+                  <h2 className="text-lg font-semibold flex items-center gap-2">
+                    Pinned
+                  </h2>
+                  <div className="space-y-3">
+                    {pinnedBookmarks.map((b) => (
+                      <BookmarkItem
+                        key={b._id}
+                        bookmark={b}
+                        viewMode={activeViewMode}
+                        folderName={displayTitle}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {unpinnedBookmarks.length > 0 ? (
+                <div className="space-y-3">
+                  {unpinnedBookmarks.map((b) => (
+                    <BookmarkItem
+                      key={b._id}
+                      bookmark={b}
+                      viewMode={activeViewMode}
+                      folderName={displayTitle}
+                    />
+                  ))}
+                </div>
+              ) : (
+                pinnedBookmarks.length === 0 && (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>This folder is empty. Start adding some bookmarks!</p>
+                  </div>
+                )
+              )}
+            </div>
           )}
-        </div>
+        </>
       )}
     </div>
   );
